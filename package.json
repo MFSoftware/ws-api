@@ -1,0 +1,28 @@
+{
+  "name": "ws-api",
+  "version": "1.0.0",
+  "description": "test",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "mocha",
+    "build": "babel src -d lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MFSoftware/ws-api.git"
+  },
+  "keywords": [
+    "api"
+  ],
+  "author": "MagicFun1241",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MFSoftware/ws-api/issues"
+  },
+  "homepage": "https://github.com/MFSoftware/ws-api#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.7.4",
+    "@babel/core": "^7.7.4",
+    "@babel/preset-env": "^7.7.4"
+  }
+}
