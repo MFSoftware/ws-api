@@ -1,8 +1,10 @@
 import validator from 'validator';
 import uuidv1 from 'uuid/v1';
 
-import Joi from '@hapi/joi';
+import Ajv from 'ajv';
 import WebSocket from 'ws';
+
+const ajv = new Ajv;
 
 export default class WebSocketAPI {
     constructor(opts = {}) {
@@ -29,24 +31,25 @@ export default class WebSocketAPI {
             ws.on('message', data => {
               if (!validator.isJSON(data)) {
                 ws.close();
-                delete this.clients[id];
+                this.clients[id] = undefined;
                 return;
               }
           
               for (let i = 0; i < this._list.length; i++) {
-                  let eventObj = this._list[i];
+                    let eventObj = this._list[i];
 
-                  if (eventObj.schema['type'] == undefined)
-                    eventObj.schema['type'] = Joi.string().required();
+                    if (eventObj.schema['messageType'] == undefined)
+                        eventObj.schema['messageType'] = { type: 'string', required: true };
 
-                  if (Joi.object(eventObj.schema).validate(JSON.parse(data)).error == null) {
                     data = JSON.parse(data);
-                    let type = data.type;
-                    delete data.type;
-              
-                    this.executeEvent(type, data);
-                    break;
-                  }
+
+                    if (ajv.validate(eventObj.schema, data)) {
+                        let type = data.messageType;
+                        data.messageType = undefined;
+                
+                        this.executeEvent(type, data);
+                        break;
+                    }
               }
             });
           
@@ -64,9 +67,7 @@ export default class WebSocketAPI {
         }
     }
 
-    on(event, schema = {
-        type: Joi.string()
-    }, callback) {
+    on(event, schema, callback) {
         switch (event) {
             case 'postConnection':
                 this._postConnectionHandlers.push(callback);
@@ -75,16 +76,17 @@ export default class WebSocketAPI {
                 this._connectionHandlers.push(callback);
                 break;
             default:
-                this._list.push({ name: event, callback, schema });
+                if (callback) this._list.push({ name: event, callback, schema });
+                else throw Error('callback must be defined');
                 break;
         }
     }
 
-    async executeEvent(name, data) {
+    async executeEvent(name, context) {
         let searched = this._list.find(element => element.name === name);
 
         if (searched == null) return;
 
-        searched.callback(data);
+        searched.callback(context);
     }
 }
