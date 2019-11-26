@@ -17,29 +17,25 @@ export default class WebSocketAPI {
         this._list = [];
 
         // API events
-        this._connectionHandlers = [];
-        this._postConnectionHandlers = [];
+        this.onConnection = 0;
+        this.onPostConnection = 0;
 
         this.wss.on('connection', (ws, req) => {
             let ip = req.connection.remoteAddress;
             let uuid = uuidv1();
             let id = this.clients.length;
 
-            for (let i = 0; i < this._connectionHandlers.length; i++)
-                this._connectionHandlers[i]({ ip, uuid, ws });
+            if (this.onConnection) this.onConnection({ ip, uuid, ws });
           
             ws.on('message', data => {
-              if (!validator.isJSON(data)) {
-                ws.close();
-                this.clients[id] = undefined;
-                return;
-              }
+                if (!validator.isJSON(data)) {
+                    ws.close();
+                    this.clients[id] = undefined;
+                    return;
+                }
           
-              for (let i = 0; i < this._list.length; i++) {
+                for (let i = 0; i < this._list.length; i++) {
                     let eventObj = this._list[i];
-
-                    if (eventObj.schema['messageType'] == undefined)
-                        eventObj.schema['messageType'] = { type: 'string', required: true };
 
                     data = JSON.parse(data);
 
@@ -55,8 +51,7 @@ export default class WebSocketAPI {
           
             ws.on('close', () => delete clients[id]);
           
-            for (let i = 0; i < this._postConnectionHandlers.length; i++)
-                this._postConnectionHandlers[i]();
+            if (this.onPostConnection) this.onPostConnection();
 
             this.clients.push({ uuid, ip, ws });
         });
@@ -67,25 +62,49 @@ export default class WebSocketAPI {
         }
     }
 
-    on(event, schema, callback) {
-        switch (event) {
-            case 'postConnection':
-                this._postConnectionHandlers.push(callback);
-                break;
-            case 'connection':
-                this._connectionHandlers.push(callback);
-                break;
-            default:
-                if (callback) this._list.push({ name: event, callback, schema });
-                else throw Error('callback must be defined');
-                break;
+    on(event, opts, ...callbacks) {
+        let cbObject = { name: event };
+
+        if (opts.schema) {
+            cbObject.schema = {};
+            cbObject.schema['type'] = 'object';
+
+            cbObject.schema['items'] = {};
+            cbObject.schema['items'] = opts.schema;
+            cbObject.schema['items']['messageType'] = 'string';
+
+            cbObject.schema['required'] = [ 'messageType' ];
+
+            if (opts.required)
+                for (let i = 0; i < opts.required.length; i++)
+                    cbObject.schema['required'].push(opts.required[i]);
         }
+
+        if (callbacks.length > 2) {
+            cbObject.callback = callbacks[callbacks.length - 1];
+            cbObject.middleware = callbacks.splice(0, callbacks.length - 2);
+        }
+        else if (callbacks.length == 2) {
+            cbObject.callback = callbacks[1];
+            cbObject.middleware = [ callbacks[0] ];
+        }
+        else if (callbacks.length == 1)
+            cbObject.callback = callbacks[0];
+        else throw new Error('Callback must be defined');
+
+        this._list.push(cbObject);
     }
 
     async executeEvent(name, context) {
         let searched = this._list.find(element => element.name === name);
 
         if (searched == null) return;
+
+        console.log(searched);
+
+        if (searched.middleware)
+            for (let i = 0; i < searched.middleware.length; i++)
+                searched.middleware[i]();
 
         searched.callback(context);
     }

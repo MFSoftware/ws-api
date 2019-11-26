@@ -2,10 +2,10 @@ const WebSocketAPI = require('../lib/index').default;
 
 let server = new WebSocketAPI({ port: 1241 });
 server.on('message', {
-    text: {
-        type: 'string',
-        required: true
+    required: [ 'text' ],
+    schema: {
+        text: 'string'
     }
-}, context => {
+}, () => console.log('test middleware'), context => {
     console.log(context.text);
 });

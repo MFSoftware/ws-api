@@ -1,11 +1,12 @@
 {
   "name": "magicws-api",
-  "version": "1.0.1",
-  "description": "test",
+  "version": "1.0.2",
+  "description": "WebSocket JSON API",
   "main": "lib/index.js",
   "scripts": {
     "test": "mocha",
-    "build": "babel src -d lib"
+    "build": "babel src -d lib",
+    "start": "node test/main"
   },
   "repository": {
     "type": "git",
@@ -13,7 +14,9 @@
   },
   "keywords": [
     "api",
-    "websockets"
+    "websockets",
+    "ws",
+    "json"
   ],
   "author": "MagicFun1241",
   "license": "MIT",

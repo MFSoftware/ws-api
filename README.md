@@ -1,5 +1,5 @@
 # Magic WebSocket API
-
+Library for creating WebSocket servers with **JSON support**
 ## How to install
 ```bash
 npm i magicws-api --save
@@ -9,14 +9,18 @@ npm i magicws-api --save
 Simple example with scheme validation
 ```javascript
 const WebSocketAPI = require('magicws-api').default;
-
-let server = new WebSocketAPI({ port: 1241 });
 server.on('message', {
-    text: {
-        type: 'string',
-        required: true
+    required: [ 'text' ],
+    schema: {
+        text: 'string'
     }
 }, context => {
     console.log(context.text);
+});
+```
+Or with middleware
+```javascript
+server.on('message', {}, () => console.log('test middleware'), context => {
+    console.log('todo');
 });
 ```
