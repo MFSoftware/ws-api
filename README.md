@@ -10,7 +10,7 @@ with yarn
 yarn add magicws-api
 ```
 
-## Example
+## Import
 ES5
 ```javascript
 const WebSocketAPI = require('magicws-api').default;
@@ -21,6 +21,7 @@ ES6
 import WebSocketAPI from 'magicws-api';
 ```
 
+## Example
 Simple example with scheme validation
 ```javascript
 let server = new WebSocketAPI({ port: 1241 });

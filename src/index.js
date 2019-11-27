@@ -21,6 +21,7 @@ export default class WebSocketAPI {
         // API events
         this.onConnection = 0;
         this.onPostConnection = 0;
+        this.onDisconnect = 0;
 
         this.wss.on('connection', (ws, req) => {
             let client = new Client;
@@ -53,36 +54,49 @@ export default class WebSocketAPI {
               }
             });
           
-            ws.on('close', () => delete clients[id]);
+            ws.on('close', () => {
+                delete this.clients[id];
+
+                if (this.onDisconnect) this.onDisconnect();
+            });
           
             if (this.onPostConnection) this.onPostConnection();
 
             this.clients.push(client);
         });
 
+        /**
+         * Send message to all connected users
+         * @param {object} message 
+         */
         this.sendAll = message => {
+            let msg = message;
+
+            if (message instanceof Object) msg = JSON.parse(msg);
+
             for (let i = 0; i < this.clients.length; i++)
-                this.clients[i]['ws'].send(message);
+                this.clients[i]['ws'].send(msg);
         }
     }
 
     on(event, opts, ...callbacks) {
         let cbObject = { name: event };
 
-        if (opts.schema) {
-            cbObject.schema = {};
-            cbObject.schema['type'] = 'object';
+        cbObject.schema = {};
+        cbObject.schema['type'] = 'object';
 
-            cbObject.schema['propertys'] = {};
-            cbObject.schema['propertys'] = opts.schema;
-            cbObject.schema['propertys']['type'] = 'string';
+        cbObject.schema['propertys'] = {};
+        
+        if (opts.schema) cbObject.schema['propertys'] = opts.schema;
 
-            cbObject.schema['required'] = [ 'type' ];
+        cbObject.schema['propertys']['type'] = 'string';
 
+        cbObject.schema['required'] = [ 'type' ];
+
+        if (opts.schema)
             if (opts.required)
                 for (let i = 0; i < opts.required.length; i++)
                     cbObject.schema['required'].push(opts.required[i]);
-        }
 
         if (callbacks.length > 2) {
             cbObject.callback = callbacks[callbacks.length - 1];
