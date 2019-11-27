@@ -1,6 +1,6 @@
 {
   "name": "magicws-api",
-  "version": "1.0.3.1",
+  "version": "1.0.4",
   "description": "WebSocket JSON API",
   "main": "lib/index.js",
   "scripts": {
