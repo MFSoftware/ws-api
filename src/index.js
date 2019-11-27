@@ -1,8 +1,10 @@
 import validator from 'validator';
-import uuidv1 from 'uuid/v1';
 
 import Ajv from 'ajv';
 import WebSocket from 'ws';
+
+import Client from './core/classes/Client';
+import Context from './core/classes/Context';
 
 const ajv = new Ajv;
 
@@ -21,16 +23,18 @@ export default class WebSocketAPI {
         this.onPostConnection = 0;
 
         this.wss.on('connection', (ws, req) => {
-            let ip = req.connection.remoteAddress;
-            let uuid = uuidv1();
+            let client = new Client;
+            client.ws = ws;
+            client.ip = req.connection.remoteAddress;
+
             let id = this.clients.length;
 
-            if (this.onConnection) this.onConnection({ ip, uuid, ws });
+            if (this.onConnection) this.onConnection(client);
           
             ws.on('message', data => {
                 if (!validator.isJSON(data)) {
                     ws.close();
-                    this.clients[id] = undefined;
+                    delete this.clients[id];
                     return;
                 }
           
@@ -40,10 +44,10 @@ export default class WebSocketAPI {
                     data = JSON.parse(data);
 
                     if (ajv.validate(eventObj.schema, data)) {
-                        let type = data.messageType;
-                        data.messageType = undefined;
+                        let type = data.type;
+                        delete data.type;
                 
-                        this.executeEvent(type, data);
+                        this.executeEvent(type, new Context(data));
                         break;
                     }
               }
@@ -53,7 +57,7 @@ export default class WebSocketAPI {
           
             if (this.onPostConnection) this.onPostConnection();
 
-            this.clients.push({ uuid, ip, ws });
+            this.clients.push(client);
         });
 
         this.sendAll = message => {
@@ -69,11 +73,11 @@ export default class WebSocketAPI {
             cbObject.schema = {};
             cbObject.schema['type'] = 'object';
 
-            cbObject.schema['items'] = {};
-            cbObject.schema['items'] = opts.schema;
-            cbObject.schema['items']['messageType'] = 'string';
+            cbObject.schema['propertys'] = {};
+            cbObject.schema['propertys'] = opts.schema;
+            cbObject.schema['propertys']['type'] = 'string';
 
-            cbObject.schema['required'] = [ 'messageType' ];
+            cbObject.schema['required'] = [ 'type' ];
 
             if (opts.required)
                 for (let i = 0; i < opts.required.length; i++)
@@ -99,8 +103,6 @@ export default class WebSocketAPI {
         let searched = this._list.find(element => element.name === name);
 
         if (searched == null) return;
-
-        console.log(searched);
 
         if (searched.middleware)
             for (let i = 0; i < searched.middleware.length; i++)
