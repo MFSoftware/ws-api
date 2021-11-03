@@ -27,7 +27,7 @@
   "dependencies": {
     "ajv": "^6.10.2",
     "uuid": "^3.3.3",
-    "validator": "^12.1.0",
+    "validator": "^13.7.0",
     "ws": "^7.2.0"
   },
   "devDependencies": {
